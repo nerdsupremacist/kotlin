@@ -145,7 +145,6 @@ internal open class GradleCompilerRunner(protected val task: Task) {
     }
 
     protected open fun runCompilerAsync(workArgs: GradleKotlinCompilerWorkArguments) {
-        GradleKotlinCompilerWork.project = project
         val kotlinCompilerRunnable = GradleKotlinCompilerWork(workArgs)
         kotlinCompilerRunnable.run()
     }
