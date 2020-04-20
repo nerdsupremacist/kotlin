@@ -19,15 +19,20 @@ import org.jetbrains.kotlin.asJava.elements.KtLightAbstractAnnotation
 import org.jetbrains.kotlin.asJava.elements.KtLightMethodImpl
 import org.jetbrains.kotlin.codegen.FunctionCodegen
 import org.jetbrains.kotlin.config.LanguageVersionSettingsImpl
+import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.load.java.BuiltinMethodsWithSpecialGenericSignature.getSpecialSignatureInfo
+import org.jetbrains.kotlin.load.java.descriptors.JavaMethodDescriptor
 import org.jetbrains.kotlin.load.kotlin.TypeMappingMode
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtFunction
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.KtTypeParameterListOwner
+import org.jetbrains.kotlin.resolve.descriptorUtil.firstOverridden
 import org.jetbrains.kotlin.resolve.jvm.diagnostics.JvmDeclarationOriginKind
+import org.jetbrains.kotlin.resolve.source.getPsi
 
 internal const val METHOD_INDEX_FOR_GETTER = 1
 internal const val METHOD_INDEX_FOR_SETTER = 2
@@ -180,6 +185,20 @@ internal class KtUltraLightMethodForSourceDeclaration(
     override fun getThrowsList(): PsiReferenceList = _throwsList
 
     override val checkNeedToErasureParametersTypes: Boolean by lazyPub { computeCheckNeedToErasureParametersTypes(methodDescriptor) }
+
+    private val _javaSuperMethod: PsiMethod? by lazyPub {
+        val origin = kotlinOrigin
+        if (origin == null || !origin.hasModifier(KtTokens.OVERRIDE_KEYWORD)) {
+            return@lazyPub null
+        }
+        val javaBase = methodDescriptor?.firstOverridden { it is JavaMethodDescriptor }
+
+        javaBase?.source?.getPsi() as? PsiMethod
+    }
+
+    // Fix KT-32245
+//    override fun getSignature(substitutor: PsiSubstitutor): MethodSignature =
+//        _javaSuperMethod?.getSignature(substitutor) ?: super.getSignature(substitutor)
 }
 
 internal class KtUltraLightMethodForDescriptor(
